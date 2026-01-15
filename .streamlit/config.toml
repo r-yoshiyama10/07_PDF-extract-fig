@@ -1,0 +1,12 @@
+[client]
+# ツールバーモード: "auto", "developer", "viewer", "minimal"
+# "viewer" にすると Deploy ボタン等が非表示になる
+toolbarMode = "viewer"
+
+[server]
+# ファイルアップロードの最大サイズ (MB)
+maxUploadSize = 100
+
+[browser]
+# 使用統計の収集を無効化
+gatherUsageStats = false
