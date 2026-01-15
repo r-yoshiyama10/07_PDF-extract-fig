@@ -1,12 +1,19 @@
 [client]
 # ツールバーモード: "auto", "developer", "viewer", "minimal"
-# "viewer" にすると Deploy ボタン等が非表示になる
 toolbarMode = "viewer"
 
 [server]
+# HuggingFace Spaces用設定
+headless = true
+port = 7860
+enableCORS = false
 # ファイルアップロードの最大サイズ (MB)
 maxUploadSize = 100
 
 [browser]
 # 使用統計の収集を無効化
 gatherUsageStats = false
+
+[theme]
+# テーマ設定
+base = "light"
