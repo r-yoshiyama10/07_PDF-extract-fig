@@ -1,0 +1,164 @@
+# ====================
+# Python
+# ====================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ====================
+# 仮想環境
+# ====================
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# ====================
+# 環境変数・機密情報
+# ====================
+.env
+.env.local
+.env.*.local
+*.pem
+secrets/
+
+# ====================
+# IDE・エディタ
+# ====================
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# ====================
+# OS固有
+# ====================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ====================
+# Streamlit
+# ====================
+.streamlit/secrets.toml
+
+# ====================
+# PyTorch / ML
+# ====================
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.pickle
+models/
+checkpoints/
+
+# ====================
+# Docker
+# ====================
+.docker/
+
+# ====================
+# Claude Code（ローカル設定）
+# ====================
+.claude/settings.local.json
+
+# ====================
+# プロジェクト固有
+# ====================
+# アップロードされたPDF
+uploads/
+input/
+*.pdf
+
+# 抽出された図表（出力）
+output/
+extracted/
+figures/
+*.png
+*.jpg
+*.jpeg
+
+# 一時ファイル
+temp/
+tmp/
+*.tmp
+*.log
+
+# ドキュメント・メモ
+docs/
+memo/
+
+# ====================
+# Jupyter Notebook
+# ====================
+.ipynb_checkpoints/
+*.ipynb
+
+# ====================
+# テスト・カバレッジ
+# ====================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# ====================
+# Docling キャッシュ
+# ====================
+.docling_cache/
+
+# ====================
+# HuggingFace Spaces
+# ====================
+.huggingface/
+*.hf
+flagged/
+
+# ====================
+# 追加MLモデル形式
+# ====================
+*.safetensors
+*.bin
+*.h5
+
+# ====================
+# 型チェック（Mypy）
+# ====================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ====================
+# リンター（Ruff）
+# ====================
+.ruff_cache/
