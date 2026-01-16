@@ -171,10 +171,9 @@ def load_document_converter(resolution: float) -> DocumentConverter:
     pipeline_options.do_ocr = False
 
     # 不要な機能を無効化（メモリ・処理時間削減）
+    pipeline_options.do_table_structure = True  # 表の構造解析は有効
     pipeline_options.do_code_enrichment = False
     pipeline_options.do_formula_enrichment = False
-    pipeline_options.do_picture_classification = False
-    pipeline_options.do_picture_description = False
 
     return DocumentConverter(
         format_options={
@@ -318,6 +317,18 @@ if uploaded_file is not None:
                             # CSV エクスポート
                             try:
                                 df = element.export_to_dataframe()
+                                # 重複列名を自動リネーム
+                                if df.columns.duplicated().any():
+                                    new_cols = []
+                                    col_count = {}
+                                    for col in df.columns:
+                                        if col in col_count:
+                                            col_count[col] += 1
+                                            new_cols.append(f"{col}_{col_count[col]}")
+                                        else:
+                                            col_count[col] = 0
+                                            new_cols.append(col)
+                                    df.columns = new_cols
                                 table_csvs.append(df)
                             except:
                                 pass
@@ -347,110 +358,6 @@ if uploaded_file is not None:
                 progress_bar.empty()
                 status_text.empty()
 
-            # 結果ダッシュボード（withブロック外で表示）
-            if st.session_state.processing_result is not None:
-                result = st.session_state.processing_result
-                figures = result["figures"]
-                tables = result["tables"]
-                table_csvs = result["table_csvs"]
-                elapsed = result["elapsed"]
-
-                st.markdown("---")
-                st.subheader("📈 抽出結果")
-
-                result_col1, result_col2, result_col3 = st.columns(3)
-                with result_col1:
-                    st.metric("抽出された図", len(figures), delta=None)
-                with result_col2:
-                    st.metric("抽出された表", len(tables), delta=None)
-                with result_col3:
-                    st.metric("処理時間", f"{elapsed:.1f}秒", delta=None)
-
-                # 図表表示
-                if len(figures) > 0:
-                    st.subheader("🖼️ 抽出された図")
-                    for idx, fig in enumerate(figures, 1):
-                        st.image(fig, caption=f"図 {idx}", use_column_width=True)
-
-                if len(tables) > 0:
-                    st.subheader("📊 抽出された表")
-                    for idx, table in enumerate(tables, 1):
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.image(table, caption=f"表 {idx}", use_column_width=True)
-                        with col2:
-                            if idx <= len(table_csvs):
-                                st.dataframe(table_csvs[idx-1], use_container_width=True)
-
-                if len(figures) == 0 and len(tables) == 0:
-                    st.warning("⚠️ この PDF に抽出可能な図表が見つかりませんでした")
-
-                # ダウンロード準備
-                st.markdown("---")
-                st.subheader("⬇️ ステップ3：結果をダウンロード")
-
-                import io
-                import zipfile
-
-                # ZIP ファイル作成
-                zip_buffer = io.BytesIO()
-                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                    for idx, fig in enumerate(figures, 1):
-                        buf = io.BytesIO()
-                        fig.save(buf, format='PNG')
-                        zip_file.writestr(f"Figure_{idx}.png", buf.getvalue())
-
-                    for idx, table in enumerate(tables, 1):
-                        buf = io.BytesIO()
-                        table.save(buf, format='PNG')
-                        zip_file.writestr(f"Table_{idx}.png", buf.getvalue())
-
-                    for idx, df in enumerate(table_csvs, 1):
-                        csv_data = df.to_csv(index=False, encoding='utf-8-sig')
-                        zip_file.writestr(f"Table_{idx}.csv", csv_data)
-
-                zip_buffer.seek(0)
-
-                st.download_button(
-                    label="📥 全て ZIP でダウンロード",
-                    data=zip_buffer.getvalue(),
-                    file_name=f"{Path(st.session_state.last_processed_file).stem}_extracted.zip",
-                    mime="application/zip",
-                    use_container_width=True,
-                    type="primary"
-                )
-
-                # 個別ダウンロード
-                if len(figures) > 0:
-                    st.markdown("### 📥 図のダウンロード")
-                    download_cols = st.columns(min(3, len(figures)))
-                    for idx, fig in enumerate(figures, 1):
-                        buf = io.BytesIO()
-                        fig.save(buf, format='PNG')
-                        buf.seek(0)
-                        with download_cols[(idx-1) % 3]:
-                            st.download_button(
-                                label=f"図 {idx}",
-                                data=buf.getvalue(),
-                                file_name=f"{Path(st.session_state.last_processed_file).stem}_Figure_{idx}.png",
-                                mime="image/png",
-                                use_container_width=True
-                            )
-
-                if len(table_csvs) > 0:
-                    st.markdown("### 📥 表（CSV）のダウンロード")
-                    download_cols = st.columns(min(3, len(table_csvs)))
-                    for idx, df in enumerate(table_csvs, 1):
-                        csv_data = df.to_csv(index=False, encoding='utf-8-sig')
-                        with download_cols[(idx-1) % 3]:
-                            st.download_button(
-                                label=f"表 {idx}",
-                                data=csv_data,
-                                file_name=f"{Path(st.session_state.last_processed_file).stem}_Table_{idx}.csv",
-                                mime="text/csv",
-                                use_container_width=True
-                            )
-            
         except MemoryError:
             progress_bar.empty()
             status_text.empty()
@@ -468,6 +375,114 @@ if uploaded_file is not None:
             status_text.empty()
             st.error(f"❌ エラーが発生しました：{str(e)}")
             st.info("💡 別の PDF を試してみてください。複雑な PDF の場合、処理に時間がかかることがあります。")
+
+    # 結果ダッシュボード（run_buttonの外で表示 - ダウンロード後も維持される）
+    if (st.session_state.processing_result is not None and
+        st.session_state.last_processed_file == uploaded_file.name):
+        result = st.session_state.processing_result
+        figures = result["figures"]
+        tables = result["tables"]
+        table_csvs = result["table_csvs"]
+        elapsed = result["elapsed"]
+
+        st.markdown("---")
+        st.subheader("📈 抽出結果")
+
+        result_col1, result_col2, result_col3 = st.columns(3)
+        with result_col1:
+            st.metric("抽出された図", len(figures), delta=None)
+        with result_col2:
+            st.metric("抽出された表", len(tables), delta=None)
+        with result_col3:
+            st.metric("処理時間", f"{elapsed:.1f}秒", delta=None)
+
+        # 図表表示
+        if len(figures) > 0:
+            st.subheader("🖼️ 抽出された図")
+            for idx, fig in enumerate(figures, 1):
+                st.image(fig, caption=f"図 {idx}", use_container_width=True)
+
+        if len(tables) > 0:
+            st.subheader("📊 抽出された表")
+            for idx, table in enumerate(tables, 1):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.image(table, caption=f"表 {idx}", use_container_width=True)
+                with col2:
+                    if idx <= len(table_csvs):
+                        try:
+                            st.dataframe(table_csvs[idx-1], use_container_width=True)
+                        except Exception as e:
+                            st.warning(f"表 {idx} のデータ表示でエラー: {str(e)}")
+
+        if len(figures) == 0 and len(tables) == 0:
+            st.warning("⚠️ この PDF に抽出可能な図表が見つかりませんでした")
+
+        # ダウンロード準備
+        st.markdown("---")
+        st.subheader("⬇️ ステップ3：結果をダウンロード")
+
+        import io
+        import zipfile
+
+        # ZIP ファイル作成
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for idx, fig in enumerate(figures, 1):
+                buf = io.BytesIO()
+                fig.save(buf, format='PNG')
+                zip_file.writestr(f"Figure_{idx}.png", buf.getvalue())
+
+            for idx, table in enumerate(tables, 1):
+                buf = io.BytesIO()
+                table.save(buf, format='PNG')
+                zip_file.writestr(f"Table_{idx}.png", buf.getvalue())
+
+            for idx, df in enumerate(table_csvs, 1):
+                csv_data = df.to_csv(index=False, encoding='utf-8-sig')
+                zip_file.writestr(f"Table_{idx}.csv", csv_data)
+
+        zip_buffer.seek(0)
+
+        st.download_button(
+            label="📥 全て ZIP でダウンロード",
+            data=zip_buffer.getvalue(),
+            file_name=f"{Path(st.session_state.last_processed_file).stem}_extracted.zip",
+            mime="application/zip",
+            use_container_width=True,
+            type="primary"
+        )
+
+        # 個別ダウンロード
+        if len(figures) > 0:
+            st.markdown("### 📥 図のダウンロード")
+            download_cols = st.columns(min(3, len(figures)))
+            for idx, fig in enumerate(figures, 1):
+                buf = io.BytesIO()
+                fig.save(buf, format='PNG')
+                buf.seek(0)
+                with download_cols[(idx-1) % 3]:
+                    st.download_button(
+                        label=f"図 {idx}",
+                        data=buf.getvalue(),
+                        file_name=f"{Path(st.session_state.last_processed_file).stem}_Figure_{idx}.png",
+                        mime="image/png",
+                        use_container_width=True
+                    )
+
+        if len(table_csvs) > 0:
+            st.markdown("### 📥 表（CSV）のダウンロード")
+            download_cols = st.columns(min(3, len(table_csvs)))
+            for idx, df in enumerate(table_csvs, 1):
+                csv_data = df.to_csv(index=False, encoding='utf-8-sig')
+                with download_cols[(idx-1) % 3]:
+                    st.download_button(
+                        label=f"表 {idx}",
+                        data=csv_data,
+                        file_name=f"{Path(st.session_state.last_processed_file).stem}_Table_{idx}.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
 
 # フッター
 st.markdown("---")
