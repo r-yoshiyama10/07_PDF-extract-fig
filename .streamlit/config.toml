@@ -6,7 +6,9 @@ toolbarMode = "viewer"
 # HuggingFace Spaces用設定
 headless = true
 port = 7860
+address = "0.0.0.0"
 enableCORS = false
+enableXsrfProtection = false
 # ファイルアップロードの最大サイズ (MB)
 maxUploadSize = 100
 
