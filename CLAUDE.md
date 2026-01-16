@@ -62,4 +62,4 @@ C:\Users\user1\Pictures\test.jpg → /mnt/c/Users/user1/Pictures/test.jpg
 | `アーキテクチャ（2版）.md` | システム構成・処理フロー |
 | `技術スタック（2版）.md` | 依存ライブラリ・バージョン |
 | `実装計画書.md` | 実装タスク・優先度 |
-| `引き継ぎプロンプト.md` | 現在の作業状況 |
+| `TAKEOVER.md` | 現在の作業状況 |
